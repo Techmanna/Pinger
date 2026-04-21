@@ -331,10 +331,19 @@ export default function PingRunner() {
     checkAuth();
   }, [checkAuth]);
 
-  // Handle URL errors (e.g. ?error=auth_denied)
+  // Handle URL errors and tokens
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
+    const token = params.get('token');
+
+    if (token) {
+      localStorage.setItem('token', token);
+      checkAuth();
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
     if (error) {
       if (error === 'auth_denied' || error === 'auth_failed') {
         showToast("Login cancelled or failed", 'error');
@@ -342,7 +351,7 @@ export default function PingRunner() {
       // Clear the error from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [checkAuth]);
 
   // Polling for updates
   useEffect(() => {
@@ -406,7 +415,10 @@ export default function PingRunner() {
   };
 
   const logout = async () => {
-    await api.get("/auth/logout");
+    try {
+      await api.get("/auth/logout");
+    } catch (err) {}
+    localStorage.removeItem('token');
     setUser(null);
   };
 
