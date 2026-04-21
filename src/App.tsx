@@ -239,17 +239,19 @@ function AddForm({ onAdd, initialData = null, onCancel }: AddFormProps) {
           <button onClick={onCancel} className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase tracking-widest">cancel</button>
         )}
       </div>
-      <div className="grid gap-2 items-center" style={{ gridTemplateColumns: "1fr 2fr 80px auto" }}>
-        <input disabled={saving} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="name" className={inputCls} />
-        <input disabled={saving} value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." className={inputCls} />
-        <input disabled={saving} value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="10" placeholder="secs" className={inputCls} />
-        <button
-          disabled={saving}
-          onClick={submit}
-          className={`px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-xs rounded whitespace-nowrap transition-colors ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-        >
-          {saving ? "saving..." : initialData ? "save" : "add"} ↗
-        </button>
+      <div className="flex flex-col sm:grid gap-2 items-center" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(0, 1fr))" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_80px_auto] gap-2 w-full items-center">
+          <input disabled={saving} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="name" className={inputCls} />
+          <input disabled={saving} value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." className={inputCls} />
+          <input disabled={saving} value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="10" placeholder="secs" className={inputCls} />
+          <button
+            disabled={saving}
+            onClick={submit}
+            className={`px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-xs rounded whitespace-nowrap transition-colors w-full sm:w-auto ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          >
+            {saving ? "saving..." : initialData ? "save" : "add"} ↗
+          </button>
+        </div>
       </div>
       <p className="text-xs text-zinc-600 mt-2">
         tip: use 840s for Render services (fires before the 15 min spin-down threshold)
@@ -416,27 +418,29 @@ export default function PingRunner() {
       <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }`}</style>
 
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-4 border-b border-zinc-800 gap-3">
         <div className="flex items-center gap-2.5">
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${allGood ? "bg-green-400" : downN > 0 ? "bg-red-400" : "bg-zinc-500"}`} />
           <span className="text-base font-medium text-white underline decoration-green-500">ping runner</span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 mr-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto mb-1 sm:mb-0 pb-2 sm:pb-0 border-b border-zinc-900 sm:border-0 mr-4">
             <img src={user.avatar} className="w-5 h-5 rounded-full" alt="" />
-            <span className="text-xs text-zinc-400">{user.name}</span>
+            <span className="text-xs text-zinc-400 truncate max-w-[100px]">{user.name}</span>
             <button onClick={logout} className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase tracking-widest ml-1">logout</button>
           </div>
-          <span className="text-xs text-green-400">{upN} up</span>
-          <span className={`text-xs ${downN > 0 ? "text-red-400" : "text-zinc-500"}`}>{downN} down</span>
-          {pendN > 0 && <span className="text-xs text-zinc-500">{pendN} pending</span>}
-          <span className="text-xs text-zinc-600">{services.filter((s) => !s.enabled).length} paused</span>
+          <div className="flex gap-4">
+            <span className="text-xs text-green-400">{upN} up</span>
+            <span className={`text-xs ${downN > 0 ? "text-red-400" : "text-zinc-500"}`}>{downN} down</span>
+            {pendN > 0 && <span className="text-xs text-zinc-500">{pendN} pending</span>}
+            <span className="text-xs text-zinc-600">{services.filter((s) => !s.enabled).length} paused</span>
+          </div>
           <button
             onClick={() => {
               setEditingService(null);
               setShowAdd((p) => !p);
             }}
-            className="text-xs px-3 py-1 border border-zinc-700 rounded-full text-zinc-300 hover:bg-zinc-800 cursor-pointer transition-colors"
+            className="text-xs px-3 py-1 border border-zinc-700 rounded-full text-zinc-300 hover:bg-zinc-800 cursor-pointer transition-colors ml-auto sm:ml-0"
           >
             {showAdd || editingService ? "cancel" : "+ add"}
           </button>
@@ -453,7 +457,7 @@ export default function PingRunner() {
       )}
 
       {/* Service grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         {fetching ? (
           [1, 2, 3, 4].map(i => <ServiceCardSkeleton key={i} />)
         ) : (
@@ -473,7 +477,7 @@ export default function PingRunner() {
           ))
         )}
         {services.length === 0 && !showAdd && !fetching && (
-          <div className="col-span-2 py-20 text-center border border-dashed border-zinc-800 rounded-xl">
+          <div className="col-span-1 sm:col-span-2 py-20 text-center border border-dashed border-zinc-800 rounded-xl">
             <p className="text-zinc-600 text-sm mb-4">No services registered yet</p>
             <button onClick={() => setShowAdd(true)} className="text-xs text-zinc-400 border border-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-900 transition-colors">+ add your first service</button>
           </div>
@@ -499,15 +503,15 @@ export default function PingRunner() {
               {services.flatMap(s => s.logs || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50).map((log) => (
                 <div
                   key={log.id}
-                  className="grid gap-2 px-3 py-1.5 border-b border-zinc-800 text-xs items-center"
-                  style={{ gridTemplateColumns: "72px 130px 70px 1fr" }}
+                  className="grid gap-2 px-3 py-1.5 border-b border-zinc-800 text-[10px] sm:text-xs items-center"
+                  style={{ gridTemplateColumns: "60px 1fr 60px 60px" }}
                 >
                   <span className="text-zinc-600">{fmtTime(log.createdAt)}</span>
-                  <span className="text-white truncate">{services.find(s => s.id === log.serviceId)?.name || '...'}</span>
-                  <span className={log.status === "up" ? "text-green-400" : log.status === "timeout" ? "text-amber-400" : "text-red-400"}>
+                  <span className="text-white truncate font-medium">{services.find(s => s.id === log.serviceId)?.name || '...'}</span>
+                  <span className={`font-mono ${log.status === "up" ? "text-green-400" : log.status === "timeout" ? "text-amber-400" : "text-red-400"}`}>
                     {log.status}
                   </span>
-                  <span className="text-zinc-500">{log.message || log.responseTime + 'ms'}</span>
+                  <span className="text-zinc-500 text-right">{log.message || log.responseTime + 'ms'}</span>
                 </div>
               ))}
               {services.every(s => !s.logs || s.logs.length === 0) && (
