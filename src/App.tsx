@@ -331,6 +331,19 @@ export default function PingRunner() {
     checkAuth();
   }, [checkAuth]);
 
+  // Handle URL errors (e.g. ?error=auth_denied)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error) {
+      if (error === 'auth_denied' || error === 'auth_failed') {
+        showToast("Login cancelled or failed", 'error');
+      }
+      // Clear the error from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Polling for updates
   useEffect(() => {
     if (!user) return;
