@@ -63,6 +63,30 @@ interface ServiceCardProps {
   onDelete: (id: string) => void;
 }
 
+function ServiceCardSkeleton() {
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-zinc-800" />
+          <div className="h-4 w-24 bg-zinc-800 rounded" />
+        </div>
+        <div className="h-3 w-10 bg-zinc-800 rounded" />
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[1, 2, 3].map(i => <div key={i} className="h-10 bg-zinc-800 rounded" />)}
+      </div>
+      <div className="h-5 bg-zinc-800 rounded" />
+      <div className="flex justify-between pt-2 border-t border-zinc-800">
+        <div className="h-3 w-32 bg-zinc-800 rounded" />
+        <div className="flex gap-1">
+          {[1, 2, 3].map(i => <div key={i} className="h-5 w-10 bg-zinc-800 rounded" />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ServiceCard({ service, pinging, onPing, onToggle, onEdit, onDelete }: ServiceCardProps) {
   const status = service.status || (service.enabled ? "pending" : null);
   const history = service.logs || [];
@@ -184,39 +208,47 @@ function AddForm({ onAdd, initialData = null, onCancel }: AddFormProps) {
     url: initialData.url,
     interval: initialData.interval.toString()
   } : { name: "", url: "https://", interval: "300" });
+  const [saving, setSaving] = useState(false);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
-  const submit = () => {
-    if (!form.name.trim() || form.url === "https://") return;
+  const submit = async () => {
+    if (!form.name.trim() || form.url === "https://" || saving) return;
+    setSaving(true);
     const url = /^https?:\/\//.test(form.url) ? form.url : "https://" + form.url;
-    onAdd({
-      name: form.name.trim(),
-      url,
-      interval: Math.max(10, parseInt(form.interval) || 300),
-    }, initialData?.id);
+    try {
+      await onAdd({
+        name: form.name.trim(),
+        url,
+        interval: Math.max(10, parseInt(form.interval) || 300),
+      }, initialData?.id);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputCls =
-    "bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white placeholder-zinc-600 outline-none focus:border-zinc-500 font-mono w-full transition-colors";
+    `bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-xs text-white placeholder-zinc-600 outline-none focus:border-zinc-500 font-mono w-full transition-colors ${saving ? "opacity-50 cursor-not-allowed" : ""}`;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-3 relative overflow-hidden">
+      {saving && <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] z-10" />}
       <div className="flex justify-between items-center mb-3">
         <p className="text-xs text-zinc-500">{initialData ? "edit service" : "add service"}</p>
-        {initialData && (
+        {initialData && !saving && (
           <button onClick={onCancel} className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase tracking-widest">cancel</button>
         )}
       </div>
       <div className="grid gap-2 items-center" style={{ gridTemplateColumns: "1fr 2fr 80px auto" }}>
-        <input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="name" className={inputCls} />
-        <input value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." className={inputCls} />
-        <input value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="10" placeholder="secs" className={inputCls} />
+        <input disabled={saving} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="name" className={inputCls} />
+        <input disabled={saving} value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." className={inputCls} />
+        <input disabled={saving} value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="10" placeholder="secs" className={inputCls} />
         <button
+          disabled={saving}
           onClick={submit}
-          className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-xs rounded cursor-pointer whitespace-nowrap transition-colors"
+          className={`px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-white text-xs rounded whitespace-nowrap transition-colors ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         >
-          {initialData ? "save" : "add"} ↗
+          {saving ? "saving..." : initialData ? "save" : "add"} ↗
         </button>
       </div>
       <p className="text-xs text-zinc-600 mt-2">
@@ -257,17 +289,27 @@ function Login() {
 export default function PingRunner() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [pinging, setPinging] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const fetchServices = useCallback(async () => {
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchServices = useCallback(async (isInitial = false) => {
+    if (isInitial) setFetching(true);
     try {
       const res = await api.get("/services");
       setServices(res.data);
     } catch (err) {
       console.error("Failed to fetch services", err);
+    } finally {
+      if (isInitial) setFetching(false);
     }
   }, []);
 
@@ -275,7 +317,7 @@ export default function PingRunner() {
     try {
       const res = await api.get("/auth/profile");
       setUser(res.data);
-      fetchServices();
+      fetchServices(true);
     } catch (err) {
       setUser(null);
     } finally {
@@ -304,8 +346,10 @@ export default function PingRunner() {
       fetchServices();
       setShowAdd(false);
       setEditingService(null);
+      showToast(id ? "Service updated" : "Service added");
     } catch (err) {
       console.error(id ? "Update failed" : "Add failed", err);
+      showToast("Action failed", 'error');
     }
   };
 
@@ -313,8 +357,10 @@ export default function PingRunner() {
     try {
       await api.put(`/services/${svc.id}`, { enabled: !svc.enabled });
       fetchServices();
+      showToast(svc.enabled ? "Service paused" : "Service resumed");
     } catch (err) {
       console.error("Toggle failed", err);
+      showToast("Toggle failed", 'error');
     }
   };
 
@@ -323,8 +369,10 @@ export default function PingRunner() {
     try {
       await api.delete(`/services/${id}`);
       fetchServices();
+      showToast("Service deleted");
     } catch (err) {
       console.error("Delete failed", err);
+      showToast("Delete failed", 'error');
     }
   };
 
@@ -332,9 +380,11 @@ export default function PingRunner() {
     setPinging((p) => ({ ...p, [id]: true }));
     try {
       await api.post(`/services/${id}/ping`);
+      showToast("Manual ping triggered");
       setTimeout(fetchServices, 1000); // Wait a bit for worker to finish
     } catch (err) {
       console.error("Ping failed", err);
+      showToast("Ping failed", 'error');
     } finally {
       setTimeout(() => setPinging((p) => ({ ...p, [id]: false })), 1000);
     }
@@ -404,21 +454,25 @@ export default function PingRunner() {
 
       {/* Service grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        {services.map((svc) => (
-          <ServiceCard
-            key={svc.id}
-            service={svc}
-            pinging={!!pinging[svc.id]}
-            onPing={pingSvc}
-            onToggle={toggleSvc}
-            onEdit={(s) => {
-              setEditingService(s);
-              setShowAdd(false);
-            }}
-            onDelete={deleteSvc}
-          />
-        ))}
-        {services.length === 0 && !showAdd && (
+        {fetching ? (
+          [1, 2, 3, 4].map(i => <ServiceCardSkeleton key={i} />)
+        ) : (
+          services.map((svc) => (
+            <ServiceCard
+              key={svc.id}
+              service={svc}
+              pinging={!!pinging[svc.id]}
+              onPing={pingSvc}
+              onToggle={toggleSvc}
+              onEdit={(s) => {
+                setEditingService(s);
+                setShowAdd(false);
+              }}
+              onDelete={deleteSvc}
+            />
+          ))
+        )}
+        {services.length === 0 && !showAdd && !fetching && (
           <div className="col-span-2 py-20 text-center border border-dashed border-zinc-800 rounded-xl">
             <p className="text-zinc-600 text-sm mb-4">No services registered yet</p>
             <button onClick={() => setShowAdd(true)} className="text-xs text-zinc-400 border border-zinc-700 px-4 py-2 rounded-full hover:bg-zinc-900 transition-colors">+ add your first service</button>
@@ -432,25 +486,46 @@ export default function PingRunner() {
           <span className="text-xs text-zinc-500">recent activity</span>
         </div>
         <div className="max-h-60 overflow-y-auto">
-          {services.flatMap(s => s.logs || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50).map((log) => (
-            <div
-              key={log.id}
-              className="grid gap-2 px-3 py-1.5 border-b border-zinc-800 text-xs items-center"
-              style={{ gridTemplateColumns: "72px 130px 70px 1fr" }}
-            >
-              <span className="text-zinc-600">{fmtTime(log.createdAt)}</span>
-              <span className="text-white truncate">{services.find(s => s.id === log.serviceId)?.name || '...'}</span>
-              <span className={log.status === "up" ? "text-green-400" : log.status === "timeout" ? "text-amber-400" : "text-red-400"}>
-                {log.status}
-              </span>
-              <span className="text-zinc-500">{log.message || log.responseTime + 'ms'}</span>
-            </div>
-          ))}
-          {services.every(s => !s.logs || s.logs.length === 0) && (
-            <div className="py-6 text-center text-xs text-zinc-600">waiting for pings...</div>
+          {fetching ? (
+            [1, 2, 3, 4].map(i => (
+              <div key={i} className="px-3 py-3 border-b border-zinc-800 animate-pulse flex gap-4">
+                <div className="h-3 w-16 bg-zinc-800 rounded" />
+                <div className="h-3 flex-1 bg-zinc-800 rounded" />
+                <div className="h-3 w-12 bg-zinc-800 rounded" />
+              </div>
+            ))
+          ) : (
+            <>
+              {services.flatMap(s => s.logs || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 50).map((log) => (
+                <div
+                  key={log.id}
+                  className="grid gap-2 px-3 py-1.5 border-b border-zinc-800 text-xs items-center"
+                  style={{ gridTemplateColumns: "72px 130px 70px 1fr" }}
+                >
+                  <span className="text-zinc-600">{fmtTime(log.createdAt)}</span>
+                  <span className="text-white truncate">{services.find(s => s.id === log.serviceId)?.name || '...'}</span>
+                  <span className={log.status === "up" ? "text-green-400" : log.status === "timeout" ? "text-amber-400" : "text-red-400"}>
+                    {log.status}
+                  </span>
+                  <span className="text-zinc-500">{log.message || log.responseTime + 'ms'}</span>
+                </div>
+              ))}
+              {services.every(s => !s.logs || s.logs.length === 0) && (
+                <div className="py-6 text-center text-xs text-zinc-600">waiting for pings...</div>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-xs font-medium z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 border ${
+          toast.type === 'success' ? 'bg-zinc-900 text-green-400 border-green-900/50' : 'bg-zinc-900 text-red-400 border-red-900/50'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
