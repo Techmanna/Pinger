@@ -277,9 +277,9 @@ function Login() {
           Continue with Google
         </a>
         <a
-          // href={loginUrl('github')}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors cursor-not-allowed opacity-50"
-          title="Coming soon"
+          href={loginUrl('github')}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
+          // title="Coming soon"
         >
           Continue with GitHub
         </a>
