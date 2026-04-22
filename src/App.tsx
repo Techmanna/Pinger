@@ -331,6 +331,14 @@ export default function PingRunner() {
     checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    if (user) {
+      document.title = "Dashboard | Ping Runner";
+    } else {
+      document.title = "Ping Runner | Keep Your Services Awake";
+    }
+  }, [user]);
+
   // Handle URL errors and tokens
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
