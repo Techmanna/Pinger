@@ -279,7 +279,7 @@ function Login() {
         <a
           href={loginUrl('github')}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
-          // title="Coming soon"
+        // title="Coming soon"
         >
           Continue with GitHub
         </a>
@@ -425,7 +425,7 @@ export default function PingRunner() {
   const logout = async () => {
     try {
       await api.get("/auth/logout");
-    } catch (err) {}
+    } catch (err) { }
     localStorage.removeItem('token');
     setUser(null);
   };
@@ -557,9 +557,8 @@ export default function PingRunner() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-xs font-medium z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 border ${
-          toast.type === 'success' ? 'bg-zinc-900 text-green-400 border-green-900/50' : 'bg-zinc-900 text-red-400 border-red-900/50'
-        }`}>
+        <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-xs font-medium z-50 animate-in fade-in slide-in-from-bottom-2 duration-300 border ${toast.type === 'success' ? 'bg-zinc-900 text-green-400 border-green-900/50' : 'bg-zinc-900 text-red-400 border-red-900/50'
+          }`}>
           {toast.msg}
         </div>
       )}
