@@ -207,7 +207,7 @@ function AddForm({ onAdd, initialData = null, onCancel }: AddFormProps) {
     name: initialData.name,
     url: initialData.url,
     interval: initialData.interval.toString()
-  } : { name: "", url: "https://", interval: "300" });
+  } : { name: "", url: "https://", interval: "120" });
   const [saving, setSaving] = useState(false);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -220,7 +220,7 @@ function AddForm({ onAdd, initialData = null, onCancel }: AddFormProps) {
       await onAdd({
         name: form.name.trim(),
         url,
-        interval: Math.max(10, parseInt(form.interval) || 300),
+        interval: Math.max(120, parseInt(form.interval) || 120),
       }, initialData?.id);
     } finally {
       setSaving(false);
@@ -243,7 +243,7 @@ function AddForm({ onAdd, initialData = null, onCancel }: AddFormProps) {
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_80px_auto] gap-2 w-full items-center">
           <input disabled={saving} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="name" className={inputCls} />
           <input disabled={saving} value={form.url} onChange={(e) => set("url", e.target.value)} placeholder="https://..." className={inputCls} />
-          <input disabled={saving} value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="10" placeholder="secs" className={inputCls} />
+          <input disabled={saving} value={form.interval} onChange={(e) => set("interval", e.target.value)} type="number" min="120" placeholder="secs" className={inputCls} />
           <button
             disabled={saving}
             onClick={submit}
@@ -379,9 +379,10 @@ export default function PingRunner() {
       setShowAdd(false);
       setEditingService(null);
       showToast(id ? "Service updated" : "Service added");
-    } catch (err) {
+    } catch (err: any) {
       console.error(id ? "Update failed" : "Add failed", err);
-      showToast("Action failed", 'error');
+      const msg = err.response?.data?.message || "Action failed";
+      showToast(Array.isArray(msg) ? msg[0] : msg, 'error');
     }
   };
 
