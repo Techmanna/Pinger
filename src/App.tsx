@@ -270,12 +270,12 @@ function Login() {
         <p className="text-zinc-500 text-sm">Keep your services awake, effortlessly.</p>
       </div>
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <a
-          href={loginUrl('google')}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-zinc-950 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
+        {/* <a
+          // href={loginUrl('google')}
+          // className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-zinc-950 rounded-lg text-sm font-medium hover:bg-zinc-200 transition-colors"
         >
           Continue with Google
-        </a>
+        </a> */}
         <a
           href={loginUrl('github')}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 text-white rounded-lg text-sm font-medium hover:bg-zinc-700 transition-colors"
